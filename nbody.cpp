@@ -58,6 +58,7 @@ int main(int argc, char *argv[])
                 if(i == j)
                     continue;
 
+				//Something is not right here
                 double xPosDiff = xPosVector[i] - xPosVector[j];
                 double yPosDiff = yPosVector[i] - yPosVector[j];
                 double r2 = pow(xPosDiff, 2) + pow(yPosDiff, 2);
