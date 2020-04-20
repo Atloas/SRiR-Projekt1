@@ -1,6 +1,6 @@
 //#include "mpi.h" 
 #include <stdio.h> 
-#include <math.h> 
+#include <cmath> 
 #include <string>
 
 int getDataSize(std::string filename);
@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
     double* yVelVector = new double[totalDataSize];  //[m/s]
     double* massVector = new double[totalDataSize];  //[kg]
     
-    //Force vectors are local, their indexes are shifted and ownDataStart == 0;
+    //Force vectors are local, their indexes are shifted compared to the global vecotrs, ownDataStart -> 0;
     double* xForceVector = new double[ownDataSize];
     double* yForceVector = new double[ownDataSize];
 
@@ -45,6 +45,12 @@ int main(int argc, char *argv[])
         readData(filename, xPosVector, yPosVector, xVelVector, yVelVector, massVector);
     }
     broadcastInitialData(myid, xPosVector, yPosVector, xVelVector, yVelVector, massVector);
+
+    double xPosDiff;
+    double yPosDiff;
+    double r2;
+    double magnitude;
+    double angle;
 
     for(double t = 0; t < Tmax; t += dt)
     {
@@ -58,12 +64,12 @@ int main(int argc, char *argv[])
                 if(i == j)
                     continue;
 
-				//Something is not right here
-                double xPosDiff = xPosVector[i] - xPosVector[j];
-                double yPosDiff = yPosVector[i] - yPosVector[j];
-                double r2 = pow(xPosDiff, 2) + pow(yPosDiff, 2);
-                double magnitude = G*massVector[i]*massVector[j]/r2;
-                double angle = atan2(yPosDiff, xPosDiff);
+				//Something is off here
+                xPosDiff = xPosVector[i] - xPosVector[j];
+                yPosDiff = yPosVector[i] - yPosVector[j];
+                r2 = pow(xPosDiff, 2) + pow(yPosDiff, 2);
+                magnitude = G*massVector[i]*massVector[j]/r2;
+                angle = atan2(yPosDiff, xPosDiff);
                 xForceVector[i - ownDataStart] += -magnitude*cos(angle);
                 yForceVector[i - ownDataStart] += -magnitude*sin(angle);
             }
@@ -71,8 +77,8 @@ int main(int argc, char *argv[])
 
         for(int i = ownDataStart; i < ownDataEnd + 1; i++)
         {
-            xVelVector[i] += xForceVector[i-ownDataStart]/massVector[i];
-            yVelVector[i] += yForceVector[i-ownDataStart]/massVector[i];
+            xVelVector[i] += xForceVector[i-ownDataStart]/massVector[i]*dt;
+            yVelVector[i] += yForceVector[i-ownDataStart]/massVector[i]*dt;
             xPosVector[i] += xVelVector[i]*dt;
             yPosVector[i] += yVelVector[i]*dt;
         }
@@ -80,7 +86,7 @@ int main(int argc, char *argv[])
         broadcastData(myid, xPosVector, yPosVector);
 
         //debugging
-        printf("Ex = %f, Ey = %f\nMx = %f, My = %f\n\n", xPosVector[0], yPosVector[0], xPosVector[1], yPosVector[1]);
+        printf("Time = %f\nEx = %f, Ey = %f\nMx = %f, My = %f\nAngle = %f\n\n", t, xPosVector[0], yPosVector[0], xPosVector[1], yPosVector[1], angle*180/3.1416);
     }
 
 	std::getchar();
