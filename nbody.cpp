@@ -58,6 +58,7 @@ int main(int argc, char *argv[])
     broadcastInitialData(totalDataSize, xPosVector, yPosVector, xVelVector, yVelVector, massVector);
     splitData(myId, numProcs, totalDataSize, &ownDataSize, partialDataStarts, partialDataEnds);
     ownDataStart = partialDataStarts[myId];
+    ownDataEnd = partialDataEnds[myId];
 
     //Force vectors are local, their indexes are shifted compared to the global vecotrs, ownDataStart -> 0;
     double* xAccelerationVector = new double[ownDataSize];
