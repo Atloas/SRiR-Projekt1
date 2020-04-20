@@ -1,7 +1,11 @@
 //#include "mpi.h" 
 #include <stdio.h> 
-#include <cmath> 
+
+#include <math.h>
+#include <stdlib.h>
 #include <string>
+#include <iostream>
+#include <fstream>
 
 int getDataSize(std::string filename);
 void readData(std::string filename, double* xPosVector, double* yPosVector, double* xVelVector, double* yVelVector, double* massVector);
@@ -54,6 +58,7 @@ int main(int argc, char *argv[])
 
     for(double t = 0; t < Tmax; t += dt)
     {
+        break;
         for(int i = ownDataStart; i < ownDataEnd + 1; i++)
         {
 			xAccelerationVector[i - ownDataStart] = 0;
@@ -108,8 +113,17 @@ int main(int argc, char *argv[])
 
 int getDataSize(std::string filename)
 {
-    //TODO: Read from file
-    return 2;
+    //Count number of bodies in datafile
+    int count = 0;
+    std::string line;
+    std::ifstream datafile("nbodydata.txt");
+    if(datafile.is_open()){
+        while(getline(datafile,line)){
+            ++count;     
+        }
+        datafile.close();
+    }
+    return (count-1);
 }
 
 void splitData(int myid, int numprocs, int dataSize, int* ownDataSize, int* ownDataStart, int* ownDataEnd)
@@ -122,21 +136,41 @@ void splitData(int myid, int numprocs, int dataSize, int* ownDataSize, int* ownD
 
 void readData(std::string filename, double* xPosVector, double* yPosVector, double* xVelVector, double* yVelVector, double* massVector)
 {
-    //TODO: Read from file
-
-    //Earth
-    xPosVector[0] = 0;
-    yPosVector[0] = 0;
-    xVelVector[0] = 0;
-    yVelVector[0] = 0;
-    massVector[0] = 6e24;
-
-    //Moon
-    xPosVector[1] = 3.84e8;
-    yPosVector[1] = 0;
-    xVelVector[1] = 0;
-    yVelVector[1] = 1e3;
-	massVector[1] = 7.3e22;
+    //Load from datafile
+    std::string line;
+    std::string delimiter = "-";
+    int count = -1;
+    int pos;
+    std::ifstream datafile("nbodydata.txt");
+    if(datafile.is_open()){
+        while(getline(datafile,line)){
+            int datapos = 0;
+            if(count != -1){
+                while ((pos = line.find(delimiter)) != std::string::npos) {
+                    std::string token = line.substr(0, pos);
+                    switch(datapos){
+                        case 1:
+                            xPosVector[count] = atof(token.c_str());
+                            break;
+                        case 2:
+                            yPosVector[count] = atof(token.c_str());
+                            break;
+                        case 3:
+                            xVelVector[count] = atof(token.c_str());
+                            break;
+                        case 4:
+                            yVelVector[count] = atof(token.c_str());
+                            break;
+                    }
+                    line.erase(0, pos + delimiter.length());
+                    datapos++;
+                }
+                massVector[count] = atof(line.c_str());
+            }
+            ++count;
+        }
+        datafile.close();
+    }
 }
 
 void broadcastInitialData(int myid, double* xPosVector, double* yPosVector, double* xVelVector, double* yVelVector, double* massVector)
