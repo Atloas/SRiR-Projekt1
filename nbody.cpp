@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     int myid = 0, numprocs = 1;
     std::string filename;
     int totalDataSize, ownDataSize, ownDataStart, ownDataEnd;
-    double dt = 1;  //[s]
+    double dt = 3600;  //[s]
     double Tmax = 2.6e6; //Miesiac
     double G = 6.674e-11;
 
@@ -65,6 +65,7 @@ int main(int argc, char *argv[])
                     continue;
 
 				//Something is off here
+				//Calculated values are fine, but the simulation falls apart??
                 xPosDiff = xPosVector[i] - xPosVector[j];
                 yPosDiff = yPosVector[i] - yPosVector[j];
                 r2 = pow(xPosDiff, 2) + pow(yPosDiff, 2);
@@ -77,8 +78,8 @@ int main(int argc, char *argv[])
 
         for(int i = ownDataStart; i < ownDataEnd + 1; i++)
         {
-            xVelVector[i] += xAccelerationVector[i-ownDataStart]*dt;
-            yVelVector[i] += yAccelerationVector[i-ownDataStart]*dt;
+            xVelVector[i] += xAccelerationVector[i - ownDataStart]*dt;
+            yVelVector[i] += yAccelerationVector[i - ownDataStart]*dt;
             xPosVector[i] += xVelVector[i]*dt;
             yPosVector[i] += yVelVector[i]*dt;
         }
