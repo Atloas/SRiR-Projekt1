@@ -37,8 +37,8 @@ int main(int argc, char *argv[])
     double* massVector = new double[totalDataSize];  //[kg]
     
     //Force vectors are local, their indexes are shifted compared to the global vecotrs, ownDataStart -> 0;
-    double* xForceVector = new double[ownDataSize];
-    double* yForceVector = new double[ownDataSize];
+    double* xAccelerationVector = new double[ownDataSize];
+    double* yAccelerationVector = new double[ownDataSize];
 
     if(myid == 0)
     {
@@ -56,8 +56,8 @@ int main(int argc, char *argv[])
     {
         for(int i = ownDataStart; i < ownDataEnd + 1; i++)
         {
-			xForceVector[i - ownDataStart] = 0;
-			yForceVector[i - ownDataStart] = 0;
+			xAccelerationVector[i - ownDataStart] = 0;
+			yAccelerationVector[i - ownDataStart] = 0;
 
             for(int j = 0; j < totalDataSize; j++)
             {
@@ -68,17 +68,17 @@ int main(int argc, char *argv[])
                 xPosDiff = xPosVector[i] - xPosVector[j];
                 yPosDiff = yPosVector[i] - yPosVector[j];
                 r2 = pow(xPosDiff, 2) + pow(yPosDiff, 2);
-                magnitude = G*massVector[i]*massVector[j]/r2;
+                magnitude = G*massVector[j]/r2;
                 angle = atan2(yPosDiff, xPosDiff);
-                xForceVector[i - ownDataStart] += -magnitude*cos(angle);
-                yForceVector[i - ownDataStart] += -magnitude*sin(angle);
+                xAccelerationVector[i - ownDataStart] += -magnitude*cos(angle);
+                yAccelerationVector[i - ownDataStart] += -magnitude*sin(angle);
             }
         }
 
         for(int i = ownDataStart; i < ownDataEnd + 1; i++)
         {
-            xVelVector[i] += xForceVector[i-ownDataStart]/massVector[i]*dt;
-            yVelVector[i] += yForceVector[i-ownDataStart]/massVector[i]*dt;
+            xVelVector[i] += xAccelerationVector[i-ownDataStart]*dt;
+            yVelVector[i] += yAccelerationVector[i-ownDataStart]*dt;
             xPosVector[i] += xVelVector[i]*dt;
             yPosVector[i] += yVelVector[i]*dt;
         }
@@ -97,8 +97,8 @@ int main(int argc, char *argv[])
     delete[] yVelVector;
     delete[] massVector;
 
-    delete[] xForceVector;
-    delete[] yForceVector;
+    delete[] xAccelerationVector;
+    delete[] yAccelerationVector;
 
     //MPI_Finalize(); 
     
