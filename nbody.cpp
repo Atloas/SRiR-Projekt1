@@ -121,12 +121,9 @@ int main(int argc, char *argv[])
         }
 
         broadcastData(myId, numProcs, xPosVector, yPosVector, partialDataStarts, partialDataEnds);
-
-        //debugging
-        //printf("Time = %f\nEx = %f, Ey = %f\nMx = %f, My = %f\nAngle = %f\n\n", t, xPosVector[0], yPosVector[0], xPosVector[1], yPosVector[1], angle*180/3.1416);
     }
 
-	std::getchar();
+    printf("Time = %f\nEx = %f, Ey = %f\nMx = %f, My = %f\nAngle = %f\n\n", xPosVector[0], yPosVector[0], xPosVector[1], yPosVector[1], angle*180/3.1416);
 
     delete[] xPosVector;
     delete[] yPosVector;
@@ -139,7 +136,7 @@ int main(int argc, char *argv[])
     delete[] xAccelerationVector;
     delete[] yAccelerationVector;
 
-    MPI_Finalize(); 
+    MPI_Finalize();
     
     return 0; 
 } 
