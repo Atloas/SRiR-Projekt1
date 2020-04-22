@@ -157,6 +157,9 @@ int getDataSize(std::string filename)
         }
         datafile.close();
     }
+#ifdef DEBUG
+	std::cout << "0: Data read: " << count-1 << std::endl;
+#endif
     return (count-1);
 }
 
@@ -166,21 +169,28 @@ void splitData(int myId, int numProcs, int totalDataSize, int* ownDataSize, int*
 	std::cout << myId << ": Splitting data." << std::endl;
 #endif
 
-    int baseCount = totalDataSize/numProcs;
-    int leftover = totalDataSize%numProcs;
+	int baseCount = totalDataSize / numProcs;
+	int leftover = totalDataSize%numProcs;
 
-    partialDataStarts[0] = 0;
-    for(int i = 1; i < numProcs; i++)
-    {
-        partialDataStarts[i] = partialDataStarts[i - 1] + baseCount;
-        if(leftover > 0)
-        {
-            partialDataStarts[i] += 1;
-            leftover--;
-        }
-        partialDataEnds[i-1] = partialDataStarts[i] - 1;
-    }
-    partialDataEnds[numProcs - 1] = totalDataSize - 1;
+	partialDataStarts[0] = 0;
+	for (int i = 1; i < numProcs; i++)
+	{
+		partialDataStarts[i] = partialDataStarts[i - 1] + baseCount;
+		if (leftover > 0)
+		{
+			partialDataStarts[i] += 1;
+			leftover--;
+		}
+		partialDataEnds[i - 1] = partialDataStarts[i] - 1;
+	}
+	partialDataEnds[numProcs - 1] = totalDataSize - 1;
+#ifdef DEBUG
+	std::cout << myId << ": Calculated parts:" << std::endl;
+	for (int i = 0; i < numProcs; i++)
+	{
+		std::cout << myId << ": [" << partialDataStarts[i] << ", " << partialDataEnds[i] << "]" << std::endl;
+	}
+#endif
 }
 
 void readData(std::string filename, double* xPosVector, double* yPosVector, double* xVelVector, double* yVelVector, double* massVector)
