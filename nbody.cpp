@@ -62,6 +62,9 @@ int main(int argc, char *argv[])
     {
         readData(filename, xPosVector, yPosVector, xVelVector, yVelVector, massVector);
     }
+#ifdef DEBUG
+	std::cout << myId << ": Broadcasting initial data." << std::endl;
+#endif
     broadcastInitialData(totalDataSize, xPosVector, yPosVector, xVelVector, yVelVector, massVector);
     splitData(myId, numProcs, totalDataSize, &ownDataSize, partialDataStarts, partialDataEnds);
     ownDataStart = partialDataStarts[myId];
@@ -87,7 +90,6 @@ int main(int argc, char *argv[])
 
     for(double t = 0; t < Tmax; t += dt)
     {
-        break;
         for(int i = ownDataStart; i < ownDataEnd + 1; i++)
         {
 			xAccelerationVector[i - ownDataStart] = 0;
@@ -237,10 +239,6 @@ void readData(std::string filename, double* xPosVector, double* yPosVector, doub
 
 void broadcastInitialData(int totalDataSize, double* xPosVector, double* yPosVector, double* xVelVector, double* yVelVector, double* massVector)
 {
-#ifdef DEBUG
-	std::cout << "0: Broadcasting initial data." << std::endl;
-#endif
-
     MPI_Bcast(xPosVector, totalDataSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(yPosVector, totalDataSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(xVelVector, totalDataSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
