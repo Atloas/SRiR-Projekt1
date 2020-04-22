@@ -247,14 +247,22 @@ void broadcastData(int myId, int numProcs, double* xPosVector, double* yPosVecto
 {
 #ifdef DEBUG
 	std::cout << myId << ": Broadcasting partial data." << std::endl;
+	std::cout << myId << ": xP[0] = " << xPosVector[0] << ", xP[1] = " << xPosVetor[1] << std::endl;
+	std::cout << myId << ": yP[0] = " << yPosVector[0] << ", yP[1] = " << yPosVetor[1] << std::endl;
 #endif
 
     int partialDataSize;
     for(int i = 0; i < numProcs; i++)
     {
-        partialDataSize = partialDataEnds[i] - partialDataStarts[i];
+        partialDataSize = partialDataEnds[i] - partialDataStarts[i] + 1;
         //Can this work when passing a pointer like this? Will it pull partialDataSize elements starting at the appropriate spot in the array?
         MPI_Bcast(xPosVector+partialDataStarts[i], partialDataSize, MPI_DOUBLE, i, MPI_COMM_WORLD);
         MPI_Bcast(yPosVector+partialDataStarts[i], partialDataSize, MPI_DOUBLE, i, MPI_COMM_WORLD);
     }
+
+#ifdef DEBUG
+	std::cout << myId << ": Finished broadcasting partial data." << std::endl;
+	std::cout << myId << ": xP[0] = " << xPosVector[0] << ", xP[1] = " << xPosVetor[1] << std::endl;
+	std::cout << myId << ": yP[0] = " << yPosVector[0] << ", yP[1] = " << yPosVetor[1] << std::endl;
+#endif
 }
