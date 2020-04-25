@@ -1,4 +1,4 @@
-//#include "mpi.h" 
+#include "mpi.h" 
 #include <stdio.h> 
 
 #include <math.h>
@@ -9,46 +9,74 @@
 
 int getDataSize(std::string filename);
 void readData(std::string filename, double* xPosVector, double* yPosVector, double* xVelVector, double* yVelVector, double* massVector);
-void splitData(int myid, int numprocs, int dataSize, int* ownDataSize, int* ownDataStart, int* ownDataEnd);
-void broadcastInitialData(int myid, double* xPosVector, double* yPosVector, double* xVelVector, double* yVelVector, double* massVector);
-void broadcastData(int myid, double* xPosVector, double* yPosVector);
+void splitData(int myId, int numProcs, int totalDataSize, int* ownDataSize, int* partialDataStarts, int* partialDataEnds);
+void broadcastInitialData(int totalDataSize, double* xPosVector, double* yPosVector, double* xVelVector, double* yVelVector, double* massVector);
+void broadcastData(int myId, int numProcs, double* xPosVector, double* yPosVector, int* partialDataStarts, int* partialDataEnds);
+
+/***********************************************
+ * TODO:
+ * -Expand dataset
+ * -Test if data is transferred correctly both in initial (should be fine) and in looped broadcasts (not sure)
+ * -Test if it all works, somehow, dunno how to check results
+ * -Test result visualization
+ * 
+ ***********************************************/
 
 int main(int argc, char *argv[]) 
 { 
-    int myid = 0, numprocs = 1;
+    int myId = 0, numProcs = 16;
     std::string filename;
-    int totalDataSize, ownDataSize, ownDataStart, ownDataEnd;
-    double dt = 3600;  //[s]
-    double Tmax = 2.6e6; //Miesiac
+    int totalDataSize = 1000, ownDataSize;
+    double dt = 3600;     //[s]
+	double Tmax = 2.6e6;  //Miesiac
     double G = 6.674e-11;
 
-    //MPI_Init(&argc, &argv); 
-    //MPI_Comm_size(MPI_COMM_WORLD, &numprocs); 
-    //MPI_Comm_rank(MPI_COMM_WORLD, &myid); 
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
+    MPI_Comm_rank(MPI_COMM_WORLD, &myId);
 
-    if(myid == 0)
+#ifdef DEBUG
+	std::cout << myId << ": Initialized process" << std::endl;
+#endif
+
+    int* partialDataStarts = new int[numProcs];
+    int* partialDataEnds = new int[numProcs];
+    int ownDataStart, ownDataEnd;
+
+    if(myId == 0)
     {
         totalDataSize = getDataSize(filename);
     }
-    //MPI_Bcast(&totalDataSize, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    
-    splitData(myid, numprocs, totalDataSize, &ownDataSize, &ownDataStart, &ownDataEnd);
+#ifdef DEBUG
+	std::cout << myId << ": totalDataSize broadcast." << std::endl;
+#endif
+    MPI_Bcast(&totalDataSize, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     double* xPosVector = new double[totalDataSize];  //[m]
     double* yPosVector = new double[totalDataSize];  //[m]
     double* xVelVector = new double[totalDataSize];  //[m/s]
     double* yVelVector = new double[totalDataSize];  //[m/s]
     double* massVector = new double[totalDataSize];  //[kg]
-    
-    //Force vectors are local, their indexes are shifted compared to the global vecotrs, ownDataStart -> 0;
-    double* xAccelerationVector = new double[ownDataSize];
-    double* yAccelerationVector = new double[ownDataSize];
 
-    if(myid == 0)
+    if(myId == 0)
     {
         readData(filename, xPosVector, yPosVector, xVelVector, yVelVector, massVector);
     }
-    broadcastInitialData(myid, xPosVector, yPosVector, xVelVector, yVelVector, massVector);
+#ifdef DEBUG
+	std::cout << myId << ": Broadcasting initial data." << std::endl;
+#endif
+    broadcastInitialData(totalDataSize, xPosVector, yPosVector, xVelVector, yVelVector, massVector);
+    splitData(myId, numProcs, totalDataSize, &ownDataSize, partialDataStarts, partialDataEnds);
+    ownDataStart = partialDataStarts[myId];
+    ownDataEnd = partialDataEnds[myId];
+
+#ifdef DEBUG
+	std::cout << myId << ": Data vectors initialized." << std::endl;
+#endif
+
+    //Force vectors are local, their indexes are shifted compared to the global vecotrs, ownDataStart -> 0;
+    double* xAccelerationVector = new double[ownDataSize];
+    double* yAccelerationVector = new double[ownDataSize];
 
     double xPosDiff;
     double yPosDiff;
@@ -56,9 +84,12 @@ int main(int argc, char *argv[])
     double magnitude;
     double angle;
 
+#ifdef DEBUG
+	std::cout << myId << ": Starting simulation." << std::endl;
+#endif
+
     for(double t = 0; t < Tmax; t += dt)
     {
-        break;
         for(int i = ownDataStart; i < ownDataEnd + 1; i++)
         {
 			xAccelerationVector[i - ownDataStart] = 0;
@@ -89,30 +120,32 @@ int main(int argc, char *argv[])
             yPosVector[i] += yVelVector[i]*dt;
         }
 
-        broadcastData(myid, xPosVector, yPosVector);
-
-        //debugging
-        printf("Time = %f\nEx = %f, Ey = %f\nMx = %f, My = %f\nAngle = %f\n\n", t, xPosVector[0], yPosVector[0], xPosVector[1], yPosVector[1], angle*180/3.1416);
+        broadcastData(myId, numProcs, xPosVector, yPosVector, partialDataStarts, partialDataEnds);
     }
 
-	std::getchar();
+    printf("Ex = %f, Ey = %f\nMx = %f, My = %f\nAngle = %f\n\n", xPosVector[0], yPosVector[0], xPosVector[1], yPosVector[1], angle*180/3.1416);
 
     delete[] xPosVector;
     delete[] yPosVector;
     delete[] xVelVector;
     delete[] yVelVector;
     delete[] massVector;
+    delete[] partialDataStarts;
+    delete[] partialDataEnds;
 
     delete[] xAccelerationVector;
     delete[] yAccelerationVector;
 
-    //MPI_Finalize(); 
+    MPI_Finalize();
     
     return 0; 
 } 
 
 int getDataSize(std::string filename)
 {
+#ifdef DEBUG
+	std::cout << "0: Reading data size." << std::endl;
+#endif
     //Count number of bodies in datafile
     int count = 0;
     std::string line;
@@ -123,19 +156,47 @@ int getDataSize(std::string filename)
         }
         datafile.close();
     }
+#ifdef DEBUG
+	std::cout << "0: Data read: " << count-1 << std::endl;
+#endif
     return (count-1);
 }
 
-void splitData(int myid, int numprocs, int dataSize, int* ownDataSize, int* ownDataStart, int* ownDataEnd)
+void splitData(int myId, int numProcs, int totalDataSize, int* ownDataSize, int* partialDataStarts, int* partialDataEnds)
 {
-    //TODO: Split data according to myid
-    *ownDataSize = dataSize;
-    *ownDataStart = 0;
-    *ownDataEnd = dataSize - 1;
+#ifdef DEBUG
+	std::cout << myId << ": Splitting data." << std::endl;
+#endif
+
+	int baseCount = totalDataSize / numProcs;
+	int leftover = totalDataSize%numProcs;
+
+	partialDataStarts[0] = 0;
+	for (int i = 1; i < numProcs; i++)
+	{
+		partialDataStarts[i] = partialDataStarts[i - 1] + baseCount;
+		if (leftover > 0)
+		{
+			partialDataStarts[i] += 1;
+			leftover--;
+		}
+		partialDataEnds[i - 1] = partialDataStarts[i] - 1;
+	}
+	partialDataEnds[numProcs - 1] = totalDataSize - 1;
+#ifdef DEBUG
+	std::cout << myId << ": Calculated parts:" << std::endl;
+	for (int i = 0; i < numProcs; i++)
+	{
+		std::cout << myId << ": [" << partialDataStarts[i] << ", " << partialDataEnds[i] << "]" << std::endl;
+	}
+#endif
 }
 
 void readData(std::string filename, double* xPosVector, double* yPosVector, double* xVelVector, double* yVelVector, double* massVector)
 {
+#ifdef DEBUG
+	std::cout << "0: Reading file." << std::endl;
+#endif
     //Load from datafile
     std::string line;
     std::string delimiter = "-";
@@ -173,17 +234,35 @@ void readData(std::string filename, double* xPosVector, double* yPosVector, doub
     }
 }
 
-void broadcastInitialData(int myid, double* xPosVector, double* yPosVector, double* xVelVector, double* yVelVector, double* massVector)
+void broadcastInitialData(int totalDataSize, double* xPosVector, double* yPosVector, double* xVelVector, double* yVelVector, double* massVector)
 {
-    //TODO
-    //Each process receives the same data
+    MPI_Bcast(xPosVector, totalDataSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(yPosVector, totalDataSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(xVelVector, totalDataSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(yVelVector, totalDataSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(massVector, totalDataSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
-void broadcastData(int myid, double* xPosVector, double* yPosVector)
+void broadcastData(int myId, int numProcs, double* xPosVector, double* yPosVector, int* partialDataStarts, int* partialDataEnds)
 {
-    //TODO
-    //Each process overwrites a portion of its data with data received, based on senderid.
-    //Just position? The rest isn't necessary for calcualtions, but it depends what data we want as output.
+#ifdef DEBUG
+	std::cout << myId << ": Broadcasting partial data." << std::endl;
+	std::cout << myId << ": xP[0] = " << xPosVector[0] << ", xP[1] = " << xPosVetor[1] << std::endl;
+	std::cout << myId << ": yP[0] = " << yPosVector[0] << ", yP[1] = " << yPosVetor[1] << std::endl;
+#endif
 
-    //Loop through ids and receive Bcasts, special case for own id.
+    int partialDataSize;
+    for(int i = 0; i < numProcs; i++)
+    {
+        partialDataSize = partialDataEnds[i] - partialDataStarts[i] + 1;
+        //Can this work when passing a pointer like this? Will it pull partialDataSize elements starting at the appropriate spot in the array?
+        MPI_Bcast(xPosVector+partialDataStarts[i], partialDataSize, MPI_DOUBLE, i, MPI_COMM_WORLD);
+        MPI_Bcast(yPosVector+partialDataStarts[i], partialDataSize, MPI_DOUBLE, i, MPI_COMM_WORLD);
+    }
+
+#ifdef DEBUG
+	std::cout << myId << ": Finished broadcasting partial data." << std::endl;
+	std::cout << myId << ": xP[0] = " << xPosVector[0] << ", xP[1] = " << xPosVetor[1] << std::endl;
+	std::cout << myId << ": yP[0] = " << yPosVector[0] << ", yP[1] = " << yPosVetor[1] << std::endl;
+#endif
 }
