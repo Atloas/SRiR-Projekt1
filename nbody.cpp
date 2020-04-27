@@ -8,10 +8,10 @@
 #include <fstream>
 
 int getDataSize(std::string filename);
-void readData(std::string filename, double* xPosVector, double* yPosVector, double* xVelVector, double* yVelVector, double* massVector);
+void readData(std::string filename, double* xPosVector, double* yPosVector, double* zPosVector, double* xVelVector, double* yVelVector, double* zVelVector, double* massVector);
 void splitData(int myId, int numProcs, int totalDataSize, int* ownDataSize, int* partialDataStarts, int* partialDataEnds);
-void broadcastInitialData(int totalDataSize, double* xPosVector, double* yPosVector, double* xVelVector, double* yVelVector, double* massVector);
-void broadcastData(int myId, int numProcs, double* xPosVector, double* yPosVector, int* partialDataStarts, int* partialDataEnds);
+void broadcastInitialData(int totalDataSize, double* xPosVector, double* yPosVector, double* zPosVector, double* xVelVector, double* yVelVector, double* zVelVector, double* massVector);
+void broadcastData(int myId, int numProcs, double* xPosVector, double* yPosVector, double* zPosVector, int* partialDataStarts, int* partialDataEnds);
 
 /***********************************************
  * TODO:
@@ -54,18 +54,20 @@ int main(int argc, char *argv[])
 
     double* xPosVector = new double[totalDataSize];  //[m]
     double* yPosVector = new double[totalDataSize];  //[m]
+	double* zPosVector = new double[totalDataSize];  //[m]
     double* xVelVector = new double[totalDataSize];  //[m/s]
     double* yVelVector = new double[totalDataSize];  //[m/s]
+	double* zVelVector = new double[totalDataSize];  //[m/s]
     double* massVector = new double[totalDataSize];  //[kg]
 
     if(myId == 0)
     {
-        readData(filename, xPosVector, yPosVector, xVelVector, yVelVector, massVector);
+        readData(filename, xPosVector, yPosVector, zPosVector, xVelVector, yVelVector, zVelVector, massVector);
     }
 #ifdef DEBUG
 	std::cout << myId << ": Broadcasting initial data." << std::endl;
 #endif
-    broadcastInitialData(totalDataSize, xPosVector, yPosVector, xVelVector, yVelVector, massVector);
+    broadcastInitialData(totalDataSize, xPosVector, yPosVector, zPosVector, xVelVector, yVelVector, zVelVector, massVector);
     splitData(myId, numProcs, totalDataSize, &ownDataSize, partialDataStarts, partialDataEnds);
     ownDataStart = partialDataStarts[myId];
     ownDataEnd = partialDataEnds[myId];
@@ -77,12 +79,15 @@ int main(int argc, char *argv[])
     //Force vectors are local, their indexes are shifted compared to the global vecotrs, ownDataStart -> 0;
     double* xAccelerationVector = new double[ownDataSize];
     double* yAccelerationVector = new double[ownDataSize];
+	double* zAccelerationVector = new double[ownDataSize];
 
     double xPosDiff;
     double yPosDiff;
+	double zPosDiff;
     double r2;
     double magnitude;
-    double angle;
+    double angleH;
+	double angleV;
 
 #ifdef DEBUG
 	std::cout << myId << ": Starting simulation." << std::endl;
@@ -94,6 +99,7 @@ int main(int argc, char *argv[])
         {
 			xAccelerationVector[i - ownDataStart] = 0;
 			yAccelerationVector[i - ownDataStart] = 0;
+			zAccelerationVector[i - ownDataStart] = 0;
 
             for(int j = 0; j < totalDataSize; j++)
             {
@@ -104,11 +110,14 @@ int main(int argc, char *argv[])
 				//Calculated values are fine, but the simulation falls apart??
                 xPosDiff = xPosVector[i] - xPosVector[j];
                 yPosDiff = yPosVector[i] - yPosVector[j];
-                r2 = pow(xPosDiff, 2) + pow(yPosDiff, 2);
+				zPosDiff = zPosVector[i] - zPosVector[j];
+                r2 = pow(xPosDiff, 2) + pow(yPosDiff, 2) + pow(zPosDiff, 2);
                 magnitude = G*massVector[j]/r2;
-                angle = atan2(yPosDiff, xPosDiff);
-                xAccelerationVector[i - ownDataStart] += -magnitude*cos(angle);
-                yAccelerationVector[i - ownDataStart] += -magnitude*sin(angle);
+				angleH = atan2(yPosDiff, sqrt(pow(zPosDiff, 2) + pow(xPosDiff, 2)));
+				angleV = atan2(zPosDiff, xPosDiff);
+				xAccelerationVector[0] += -magnitude*cos(angleH)*cos(angleV);
+				yAccelerationVector[0] += -magnitude*sin(angleH);
+				zAccelerationVector[0] += -magnitude*cos(angleH)*sin(angleV);
             }
         }
 
@@ -116,19 +125,23 @@ int main(int argc, char *argv[])
         {
             xVelVector[i] += xAccelerationVector[i - ownDataStart]*dt;
             yVelVector[i] += yAccelerationVector[i - ownDataStart]*dt;
+			zVelVector[i] += zAccelerationVector[i - ownDataStart] * dt;
             xPosVector[i] += xVelVector[i]*dt;
             yPosVector[i] += yVelVector[i]*dt;
+			zPosVector[i] += zVelVector[i]*dt;
         }
 
-        broadcastData(myId, numProcs, xPosVector, yPosVector, partialDataStarts, partialDataEnds);
+        broadcastData(myId, numProcs, xPosVector, yPosVector, zPosVector, partialDataStarts, partialDataEnds);
     }
 
-    printf("Ex = %f, Ey = %f\nMx = %f, My = %f\nAngle = %f\n\n", xPosVector[0], yPosVector[0], xPosVector[1], yPosVector[1], angle*180/3.1416);
+    printf("Ex = %f, Ey = %f, Ez = %f\nMx = %f, My = %f, Mz = %f\n\n", xPosVector[0], yPosVector[0], zPosVector[0], xPosVector[1], yPosVector[1], zPosVector[1]);
 
     delete[] xPosVector;
     delete[] yPosVector;
+	delete[] zPosVector;
     delete[] xVelVector;
     delete[] yVelVector;
+	delete[] zVelVector;
     delete[] massVector;
     delete[] partialDataStarts;
     delete[] partialDataEnds;
@@ -192,7 +205,7 @@ void splitData(int myId, int numProcs, int totalDataSize, int* ownDataSize, int*
 #endif
 }
 
-void readData(std::string filename, double* xPosVector, double* yPosVector, double* xVelVector, double* yVelVector, double* massVector)
+void readData(std::string filename, double* xPosVector, double* yPosVector, double* zPosVector, double* xVelVector, double* yVelVector, double* zVelVector, double* massVector)
 {
 #ifdef DEBUG
 	std::cout << "0: Reading file." << std::endl;
@@ -216,12 +229,18 @@ void readData(std::string filename, double* xPosVector, double* yPosVector, doub
                         case 2:
                             yPosVector[count] = atof(token.c_str());
                             break;
-                        case 3:
+						case 3:
+							zPosVector[count] = atof(token.c_str());
+							break;
+                        case 4:
                             xVelVector[count] = atof(token.c_str());
                             break;
-                        case 4:
+                        case 5:
                             yVelVector[count] = atof(token.c_str());
                             break;
+						case 6:
+							zVelVector[count] = atof(token.c_str());
+							break;
                     }
                     line.erase(0, pos + delimiter.length());
                     datapos++;
@@ -234,35 +253,39 @@ void readData(std::string filename, double* xPosVector, double* yPosVector, doub
     }
 }
 
-void broadcastInitialData(int totalDataSize, double* xPosVector, double* yPosVector, double* xVelVector, double* yVelVector, double* massVector)
+void broadcastInitialData(int totalDataSize, double* xPosVector, double* yPosVector, double* zPosVector, double* xVelVector, double* yVelVector, double* zVelVector, double* massVector)
 {
     MPI_Bcast(xPosVector, totalDataSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(yPosVector, totalDataSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(zPosVector, totalDataSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(xVelVector, totalDataSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(yVelVector, totalDataSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(zVelVector, totalDataSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(massVector, totalDataSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
-void broadcastData(int myId, int numProcs, double* xPosVector, double* yPosVector, int* partialDataStarts, int* partialDataEnds)
+void broadcastData(int myId, int numProcs, double* xPosVector, double* yPosVector, double* zPosVector, int* partialDataStarts, int* partialDataEnds)
 {
 #ifdef DEBUG
 	std::cout << myId << ": Broadcasting partial data." << std::endl;
 	std::cout << myId << ": xP[0] = " << xPosVector[0] << ", xP[1] = " << xPosVetor[1] << std::endl;
 	std::cout << myId << ": yP[0] = " << yPosVector[0] << ", yP[1] = " << yPosVetor[1] << std::endl;
+	std::cout << myId << ": zP[0] = " << zPosVector[0] << ", zP[1] = " << zPosVetor[1] << std::endl;
 #endif
 
     int partialDataSize;
     for(int i = 0; i < numProcs; i++)
     {
         partialDataSize = partialDataEnds[i] - partialDataStarts[i] + 1;
-        //Can this work when passing a pointer like this? Will it pull partialDataSize elements starting at the appropriate spot in the array?
-        MPI_Bcast(xPosVector+partialDataStarts[i], partialDataSize, MPI_DOUBLE, i, MPI_COMM_WORLD);
-        MPI_Bcast(yPosVector+partialDataStarts[i], partialDataSize, MPI_DOUBLE, i, MPI_COMM_WORLD);
+        MPI_Bcast(xPosVector + partialDataStarts[i], partialDataSize, MPI_DOUBLE, i, MPI_COMM_WORLD);
+        MPI_Bcast(yPosVector + partialDataStarts[i], partialDataSize, MPI_DOUBLE, i, MPI_COMM_WORLD);
+		MPI_Bcast(zPosVector + partialDataStarts[i], partialDataSize, MPI_DOUBLE, i, MPI_COMM_WORLD);
     }
 
 #ifdef DEBUG
 	std::cout << myId << ": Finished broadcasting partial data." << std::endl;
 	std::cout << myId << ": xP[0] = " << xPosVector[0] << ", xP[1] = " << xPosVetor[1] << std::endl;
 	std::cout << myId << ": yP[0] = " << yPosVector[0] << ", yP[1] = " << yPosVetor[1] << std::endl;
+	std::cout << myId << ": zP[0] = " << zPosVector[0] << ", zP[1] = " << zPosVetor[1] << std::endl;
 #endif
 }
