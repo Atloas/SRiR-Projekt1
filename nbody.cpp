@@ -134,8 +134,6 @@ int main(int argc, char *argv[])
         broadcastData(myId, numProcs, xPosVector, yPosVector, zPosVector, partialDataStarts, partialDataEnds);
     }
 
-    printf("Ex = %f, Ey = %f, Ez = %f\nMx = %f, My = %f, Mz = %f\n\n", xPosVector[0], yPosVector[0], zPosVector[0], xPosVector[1], yPosVector[1], zPosVector[1]);
-
     delete[] xPosVector;
     delete[] yPosVector;
 	delete[] zPosVector;
@@ -148,6 +146,7 @@ int main(int argc, char *argv[])
 
     delete[] xAccelerationVector;
     delete[] yAccelerationVector;
+	delete[] zAccelerationVector;
 
     MPI_Finalize();
     
@@ -268,9 +267,6 @@ void broadcastData(int myId, int numProcs, double* xPosVector, double* yPosVecto
 {
 #ifdef DEBUG
 	std::cout << myId << ": Broadcasting partial data." << std::endl;
-	std::cout << myId << ": xP[0] = " << xPosVector[0] << ", xP[1] = " << xPosVector[1] << std::endl;
-	std::cout << myId << ": yP[0] = " << yPosVector[0] << ", yP[1] = " << yPosVector[1] << std::endl;
-	std::cout << myId << ": zP[0] = " << zPosVector[0] << ", zP[1] = " << zPosVector[1] << std::endl;
 #endif
 
     int partialDataSize;
@@ -284,8 +280,5 @@ void broadcastData(int myId, int numProcs, double* xPosVector, double* yPosVecto
 
 #ifdef DEBUG
 	std::cout << myId << ": Finished broadcasting partial data." << std::endl;
-	std::cout << myId << ": xP[0] = " << xPosVector[0] << ", xP[1] = " << xPosVector[1] << std::endl;
-	std::cout << myId << ": yP[0] = " << yPosVector[0] << ", yP[1] = " << yPosVector[1] << std::endl;
-	std::cout << myId << ": zP[0] = " << zPosVector[0] << ", zP[1] = " << zPosVector[1] << std::endl;
 #endif
 }
