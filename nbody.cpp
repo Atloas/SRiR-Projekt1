@@ -12,6 +12,7 @@ void readData(std::string filename, double* xPosVector, double* yPosVector, doub
 void splitData(int myId, int numProcs, int totalDataSize, int* partialDataStarts, int* partialDataEnds);
 void broadcastInitialData(int totalDataSize, double* xPosVector, double* yPosVector, double* zPosVector, double* xVelVector, double* yVelVector, double* zVelVector, double* massVector);
 void broadcastData(int myId, int numProcs, double* xPosVector, double* yPosVector, double* zPosVector, int* partialDataStarts, int* partialDataEnds);
+void saveData(std::string filename, double* xPosVector, double* yPosVector, double* zPosVector, int totalDataSize);
 
 /***********************************************
  * TODO:
@@ -133,7 +134,10 @@ int main(int argc, char *argv[])
             yPosVector[i] += yVelVector[i]*dt;
 			zPosVector[i] += zVelVector[i]*dt;
         }
-
+        
+        if(myId==0){
+            saveData(filename,xPosVector,yPosVector,zPosVector, totalDataSize);
+        }
         broadcastData(myId, numProcs, xPosVector, yPosVector, zPosVector, partialDataStarts, partialDataEnds);
     }
 
@@ -288,4 +292,22 @@ void broadcastData(int myId, int numProcs, double* xPosVector, double* yPosVecto
 	#ifdef DEBUG
 	std::cout << myId << ": Finished broadcasting partial data." << std::endl;
 	#endif
+}
+
+void saveData(std::string filename, double* xPosVector, double* yPosVector, double* zPosVector, int totalDataSize)
+{
+    FILE * resultfile;
+    resultfile = fopen("resultdata.txt","a");
+
+    for(int i=0; i < totalDataSize; i++)
+    {
+        fprintf(resultfile, "%d:  ;  x  ;        y      ;       z\n", i);
+        fprintf(resultfile, "%f;", xPosVector[i]);
+        fprintf(resultfile, "%f;", yPosVector[i]);
+        fprintf(resultfile, "%f;", zPosVector[i]);
+        fprintf(resultfile, "\n");
+    } 
+    fprintf(resultfile, "\n\n");
+
+    fclose(resultfile);
 }
