@@ -190,7 +190,7 @@ void readData(std::string filename, double* xPosVector, double* yPosVector, doub
 #endif
     //Load from datafile
     std::string line;
-    std::string delimiter = "-";
+    std::string delimiter = ";";
     int count = -1;
     int pos;
     std::ifstream datafile("nbodydata.txt");

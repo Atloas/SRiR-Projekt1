@@ -1,3 +1,3 @@
-ID-x-y-xVel-yVel-massVector
-1-0-0-0-0-6e24
-2-3.84e8-0-0-1e3-7.3e22	
+ID;x;y;xVel;yVel;massVector
+1;0;0;0;0;6e24
+2;3.84e8;0;0;1e3;7.3e22	
