@@ -15,23 +15,14 @@ void broadcastData(int myId, int numProcs, double* xPosVector, double* yPosVecto
 void broadcastData2(int myId, int numProcs, int totalDataSize, double* xPosVector, double* yPosVector, double* zPosVector, int* partialDataEnds);
 void saveData(FILE* resultFile, double* xPosVector, double* yPosVector, double* zPosVector, int totalDataSize);
 
-/***********************************************
-* TODO:
-* -Expand dataset
-* -Test if data is transferred correctly both in initial (should be fine) and in looped broadcasts (not sure)
-* -Test if it all works, somehow, dunno how to check results
-* -Test result visualization
-*
-***********************************************/
-
 int main(int argc, char *argv[])
 {
 	int myId = 0, numProcs = 2;
 	std::string filename = "resultdata.txt";
 	FILE* resultFile;
 	int totalDataSize = 1000, ownDataSize;
-	double dt = 60;     //[s]
-	double Tmax = 2.6e6;  //Miesiac
+	double dt = 60;			//[s]
+	double Tmax = 2.6e6;	//Miesiac
 	double G = 6.674e-11;
 
 	MPI_Init(&argc, &argv);
@@ -83,9 +74,9 @@ int main(int argc, char *argv[])
 #endif
 
 	//Acceleration vectors are local, their indexes are shifted compared to the global vecotrs, ownDataStart -> 0;
-	double* xAccelerationVector = new double[ownDataSize];
-	double* yAccelerationVector = new double[ownDataSize];
-	double* zAccelerationVector = new double[ownDataSize];
+	double* xAccelerationVector = new double[ownDataSize];  //m/s2
+	double* yAccelerationVector = new double[ownDataSize];	//m/s2
+	double* zAccelerationVector = new double[ownDataSize];	//m/s2
 
 	double xPosDiff;
 	double yPosDiff;
@@ -138,13 +129,13 @@ int main(int argc, char *argv[])
 			zPosVector[i] += zVelVector[i] * dt;
 		}
 
+		broadcastData(myId, numProcs, xPosVector, yPosVector, zPosVector, partialDataStarts, partialDataEnds);
+		//broadcastData2(myId, numProcs, totalDataSize, xPosVector, yPosVector, zPosVector, partialDataEnds);
+		
 		if (myId == 0 && writeCounter % 10 == 0) {
 			saveData(resultFile, xPosVector, yPosVector, zPosVector, totalDataSize);
 		}
 		writeCounter++;
-
-		broadcastData(myId, numProcs, xPosVector, yPosVector, zPosVector, partialDataStarts, partialDataEnds);
-		//broadcastData2(myId, numProcs, totalDataSize, xPosVector, yPosVector, zPosVector, partialDataEnds);
 	}
 
 	fclose(resultFile);
