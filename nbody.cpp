@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
     int myId = 0, numProcs = 2;
     std::string filename;
     int totalDataSize = 1000, ownDataSize;
-    double dt = 3600;     //[s]
+    double dt = 60;     //[s]
     double Tmax = 2.6e6;  //Miesiac
     double G = 6.674e-11;
 
