@@ -49,3 +49,5 @@ for i=1:3:size(pos,1)
 end
 
 fclose(fid);
+
+fread('resultfile.txt'

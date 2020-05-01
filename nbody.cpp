@@ -96,6 +96,7 @@ int main(int argc, char *argv[])
 	double angleV;
 
 	resultFile = fopen(filename.c_str(), "w");
+	fprintf(resultFile, "id;x;y;z\n");
 
 #ifdef DEBUG
 	std::cout << myId << ": Starting simulation." << std::endl;
@@ -345,11 +346,6 @@ void saveData(FILE* resultFile, double* xPosVector, double* yPosVector, double* 
 {
 	for (int i = 0; i < totalDataSize; i++)
 	{
-		fprintf(resultFile, "%d:x;y;z\n", i);
-		fprintf(resultFile, "%f;", xPosVector[i]);
-		fprintf(resultFile, "%f;", yPosVector[i]);
-		fprintf(resultFile, "%f;", zPosVector[i]);
-		fprintf(resultFile, "\n");
+		fprintf(resultFile, "%d;%f;%f;%f\n", i, xPosVector[i], yPosVector[i], zPosVector[i]);
 	}
-	fprintf(resultFile, "\n\n");
 }
