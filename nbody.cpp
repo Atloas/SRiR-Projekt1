@@ -139,8 +139,8 @@ int main(int argc, char *argv[])
 		}
 		writeCounter++;
 
-		//broadcastData(myId, numProcs, xPosVector, yPosVector, zPosVector, partialDataStarts, partialDataEnds);
-		broadcastData2(myId, numProcs, totalDataSize, xPosVector, yPosVector, zPosVector, partialDataEnds);
+		broadcastData(myId, numProcs, xPosVector, yPosVector, zPosVector, partialDataStarts, partialDataEnds);
+		//broadcastData2(myId, numProcs, totalDataSize, xPosVector, yPosVector, zPosVector, partialDataEnds);
 	}
 
 	delete[] xPosVector;
