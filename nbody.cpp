@@ -308,9 +308,9 @@ void broadcastData2(int myId, int numProcs, int totalDataSize, double* xPosVecto
 	int partialDataSendSize = partialDataEnds[myId] + 1;
 	if (myId == 0)
 	{
-		MPI_Send(xPosVector, partialDataSendSize, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-		MPI_Send(yPosVector, partialDataSendSize, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-		MPI_Send(zPosVector, partialDataSendSize, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+		MPI_Send(xPosVector, partialDataSendSize, MPI_DOUBLE, 1, 0, MPI_COMM_WORLD);
+		MPI_Send(yPosVector, partialDataSendSize, MPI_DOUBLE, 1, 0, MPI_COMM_WORLD);
+		MPI_Send(zPosVector, partialDataSendSize, MPI_DOUBLE, 1, 0, MPI_COMM_WORLD);
 	}
 	else
 	{
