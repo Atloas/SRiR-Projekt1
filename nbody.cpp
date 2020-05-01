@@ -8,7 +8,7 @@
 #include <fstream>
 
 int getDataSize(std::string filename);
-void readData(std::string filename, double* xPosVector, double* yPosVector, double* zPosVector, double* xVelVector, double* yVelVector, double* zVelVector, double* massVector);
+void readData(FILE* resultFile, double* xPosVector, double* yPosVector, double* zPosVector, double* xVelVector, double* yVelVector, double* zVelVector, double* massVector);
 void splitData(int myId, int numProcs, int totalDataSize, int* partialDataStarts, int* partialDataEnds);
 void broadcastInitialData(int totalDataSize, double* xPosVector, double* yPosVector, double* zPosVector, double* xVelVector, double* yVelVector, double* zVelVector, double* massVector);
 void broadcastData(int myId, int numProcs, double* xPosVector, double* yPosVector, double* zPosVector, int* partialDataStarts, int* partialDataEnds);
@@ -27,7 +27,8 @@ void saveData(std::string filename, double* xPosVector, double* yPosVector, doub
 int main(int argc, char *argv[])
 {
 	int myId = 0, numProcs = 2;
-	std::string filename;
+	std::string filename = "resultdata.txt";
+	FILE* resultfile;
 	int totalDataSize = 1000, ownDataSize;
 	double dt = 60;     //[s]
 	double Tmax = 2.6e6;  //Miesiac
@@ -94,6 +95,8 @@ int main(int argc, char *argv[])
 	double angleH;
 	double angleV;
 
+	resultfile = fopen(filename.c_str(), "w");
+
 #ifdef DEBUG
 	std::cout << myId << ": Starting simulation." << std::endl;
 #endif
@@ -142,6 +145,8 @@ int main(int argc, char *argv[])
 		broadcastData(myId, numProcs, xPosVector, yPosVector, zPosVector, partialDataStarts, partialDataEnds);
 		//broadcastData2(myId, numProcs, totalDataSize, xPosVector, yPosVector, zPosVector, partialDataEnds);
 	}
+
+	fclose(resultfile);
 
 	delete[] xPosVector;
 	delete[] yPosVector;
@@ -336,20 +341,15 @@ void broadcastData2(int myId, int numProcs, int totalDataSize, double* xPosVecto
 	#endif
 }
 
-void saveData(std::string filename, double* xPosVector, double* yPosVector, double* zPosVector, int totalDataSize)
+void saveData(FILE* resultFile, double* xPosVector, double* yPosVector, double* zPosVector, int totalDataSize)
 {
-	FILE * resultfile;
-	resultfile = fopen("resultdata.txt", "a");
-
 	for (int i = 0; i < totalDataSize; i++)
 	{
-		fprintf(resultfile, "%d:x;y;z\n", i);
-		fprintf(resultfile, "%f;", xPosVector[i]);
-		fprintf(resultfile, "%f;", yPosVector[i]);
-		fprintf(resultfile, "%f;", zPosVector[i]);
-		fprintf(resultfile, "\n");
+		fprintf(resultFile, "%d:x;y;z\n", i);
+		fprintf(resultFile, "%f;", xPosVector[i]);
+		fprintf(resultFile, "%f;", yPosVector[i]);
+		fprintf(resultFile, "%f;", zPosVector[i]);
+		fprintf(resultFile, "\n");
 	}
-	fprintf(resultfile, "\n\n");
-
-	fclose(resultfile);
+	fprintf(resultFile, "\n\n");
 }
