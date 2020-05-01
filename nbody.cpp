@@ -317,9 +317,9 @@ void broadcastData2(int myId, int numProcs, int totalDataSize, double* xPosVecto
 		}
 		if (myId == i + 1)
 		{
-			MPI_Recv(xPosVector, partialDataSize, MPI_DOUBLE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
-			MPI_Recv(yPosVector, partialDataSize, MPI_DOUBLE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
-			MPI_Recv(zPosVector, partialDataSize, MPI_DOUBLE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+			MPI_Recv(xPosVector, partialDataSize, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
+			MPI_Recv(yPosVector, partialDataSize, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
+			MPI_Recv(zPosVector, partialDataSize, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
 		}
 	}
 
