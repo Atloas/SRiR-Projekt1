@@ -1,51 +1,35 @@
-clear;
 clc;
+clear;
 
-fid = fopen('resultdata.txt');
-tline = fgetl(fid);
+dataString = fileread('resultdata.txt');
+fullData = sscanf(dataString(10:end), '%d;%f;%f;%f\n', [4 Inf]);
 
-pos = [];
-count = 0;
-index = 1;
-indexy = 1;
-indexx = 1;
+trackedBodies = max(fullData(1, :)) + 1;
+datapointCount = size(fullData, 2)/trackedBodies;
 
-while ischar(tline)
-    if mod(count,2)==1
-        values = strsplit(tline,';');
-        pos(indexy,indexx) = str2double(values{1});
-        indexy = indexy + 1;
-        pos(indexy,indexx) = str2double(values{2});
-        indexy = indexy + 1;
-        pos(indexy,indexx) = str2double(values{3});
-        indexy = index;
-        indexx = indexx + 1;
-    end
-    if count==23
-        count = 0;
-        indexx = 1;
-        index = index + 3;
-        indexy = index;
-        while(ischar(tline) && (tline~="0:x;y;z"))
-            tline = fgetl(fid);
-        end
-    end
-    count = count + 1;
-    tline = fgetl(fid);
-end
+fullData = reshape(fullData, 4, 36, datapointCount);
 
-X=[];
-Y=[];
-Z=[];
-for i=1:3:size(pos,1)
-    for j=1:1:size(pos,2)
-        X(j)=pos(i,j);
-        Y(j)=pos(i+1,j);
-        Z(j)=pos(i+2,j);
-    end
+myVideo = VideoWriter('visualization');
+myVideo.FrameRate = 24;
+open(myVideo)
+oservedBody = 4;
+windowSize = 1e9;
+
+for i = 1:datapointCount
+    scatter3(fullData(2, end-1:end, i), fullData(3, end-1:end, i), fullData(4, end-1:end, i), 'filled', 'g');
+    hold on;
+    scatter3(fullData(2, 2:end-2, i), fullData(3, 2:end-2, i), fullData(4, 2:end-2, i), 'filled', 'b');
+    scatter3(fullData(2, 1, i), fullData(3, 1, i), fullData(4, 1, i), 'filled', 'y');
+    hold off;
+    xlim([fullData(2, oservedBody, i) - windowSize, fullData(2, oservedBody, i) + windowSize]);
+    ylim([fullData(3, oservedBody, i) - windowSize, fullData(3, oservedBody, i) + windowSize]);
+    zlim([-5e11, 5e11]);
+    view([0 0 1]);
+    
     pause(0.01);
-    plt=scatter3(X,Y,Z);
-    axis([-5e12 5e12 -5e12 5e12 -5e12 5e12]);
+    
+    frame = getframe(gcf);
+    writeVideo(myVideo, frame);
 end
 
-fclose(fid);
+close(myVideo)
