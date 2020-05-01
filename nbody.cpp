@@ -8,12 +8,12 @@
 #include <fstream>
 
 int getDataSize(std::string filename);
-void readData(FILE* resultFile, double* xPosVector, double* yPosVector, double* zPosVector, double* xVelVector, double* yVelVector, double* zVelVector, double* massVector);
+void readData(std::string filename, double* xPosVector, double* yPosVector, double* zPosVector, double* xVelVector, double* yVelVector, double* zVelVector, double* massVector);
 void splitData(int myId, int numProcs, int totalDataSize, int* partialDataStarts, int* partialDataEnds);
 void broadcastInitialData(int totalDataSize, double* xPosVector, double* yPosVector, double* zPosVector, double* xVelVector, double* yVelVector, double* zVelVector, double* massVector);
 void broadcastData(int myId, int numProcs, double* xPosVector, double* yPosVector, double* zPosVector, int* partialDataStarts, int* partialDataEnds);
 void broadcastData2(int myId, int numProcs, int totalDataSize, double* xPosVector, double* yPosVector, double* zPosVector, int* partialDataEnds);
-void saveData(std::string filename, double* xPosVector, double* yPosVector, double* zPosVector, int totalDataSize);
+void saveData(FILE* resultFile, double* xPosVector, double* yPosVector, double* zPosVector, int totalDataSize);
 
 /***********************************************
 * TODO:
@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 {
 	int myId = 0, numProcs = 2;
 	std::string filename = "resultdata.txt";
-	FILE* resultfile;
+	FILE* resultFile;
 	int totalDataSize = 1000, ownDataSize;
 	double dt = 60;     //[s]
 	double Tmax = 2.6e6;  //Miesiac
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 	double angleH;
 	double angleV;
 
-	resultfile = fopen(filename.c_str(), "w");
+	resultFile = fopen(filename.c_str(), "w");
 
 #ifdef DEBUG
 	std::cout << myId << ": Starting simulation." << std::endl;
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 		}
 
 		if (myId == 0 && writeCounter % 10 == 0) {
-			saveData(filename, xPosVector, yPosVector, zPosVector, totalDataSize);
+			saveData(resultFile, xPosVector, yPosVector, zPosVector, totalDataSize);
 		}
 		writeCounter++;
 
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
 		//broadcastData2(myId, numProcs, totalDataSize, xPosVector, yPosVector, zPosVector, partialDataEnds);
 	}
 
-	fclose(resultfile);
+	fclose(resultFile);
 
 	delete[] xPosVector;
 	delete[] yPosVector;
