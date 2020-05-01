@@ -301,7 +301,7 @@ void saveData(std::string filename, double* xPosVector, double* yPosVector, doub
 
     for(int i=0; i < totalDataSize; i++)
     {
-        fprintf(resultfile, "%d:  ;  x  ;        y      ;       z\n", i);
+        fprintf(resultfile, "%d:x;y;z\n", i);
         fprintf(resultfile, "%f;", xPosVector[i]);
         fprintf(resultfile, "%f;", yPosVector[i]);
         fprintf(resultfile, "%f;", zPosVector[i]);
