@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 				zAccelerationVector[i] += -magnitude*cos(angleH)*sin(angleV);
 
 #ifdef DEBUG
-				if (myId == 0 && t < 1.0 && i == 0)
+				if (myId == 0 && t < 1.0 && i == 0 && j == 1)
 				{
 					std::cout << myId << ": calculating for: own = " << i << ", other = " << j << std::endl;
 					std::cout << "r2 = " << r2 << "\nForce magnitude = " << magnitude << std::endl;
@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
 
 		for (int i = ownDataStart; i < ownDataEnd + 1; i++)
 		{
-			if (myId == 0 && t < 1.0 && i == 0)
+			if (myId == 0 && t < 1.0 && i == ownDataStart)
 			{
 				std::cout << "xAcceleration = " << xAccelerationVector[i - ownDataStart];
 				std::cout << "\nyAcceleration = " << yAccelerationVector[i - ownDataStart];
