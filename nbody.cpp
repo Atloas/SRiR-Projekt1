@@ -89,6 +89,13 @@ int main(int argc, char *argv[])
 				if (i == j)
 					continue;
 
+#ifdef DEBUG
+				if (miId == 1 && t < 1.0)
+				{
+					std::cout << myId << ": calculating for: own = " << i << ", other = " << j << std::endl;
+				}
+#endif
+
 				xPosDiff = xPosVector[i] - xPosVector[j];
 				yPosDiff = yPosVector[i] - yPosVector[j];
 				zPosDiff = zPosVector[i] - zPosVector[j];
