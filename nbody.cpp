@@ -12,7 +12,6 @@ void readData(std::string filename, double* xPosVector, double* yPosVector, doub
 void splitData(int myId, int numProcs, int totalDataSize, int* partialDataStarts, int* partialDataEnds);
 void broadcastInitialData(int totalDataSize, double* xPosVector, double* yPosVector, double* zPosVector, double* xVelVector, double* yVelVector, double* zVelVector, double* massVector);
 void broadcastData(int myId, int numProcs, double* xPosVector, double* yPosVector, double* zPosVector, int* partialDataStarts, int* partialDataEnds);
-void broadcastData2(int myId, int numProcs, int totalDataSize, double* xPosVector, double* yPosVector, double* zPosVector, int* partialDataEnds);
 void saveData(FILE* resultFile, double* xPosVector, double* yPosVector, double* zPosVector, int totalDataSize);
 
 int main(int argc, char *argv[])
@@ -53,13 +52,14 @@ int main(int argc, char *argv[])
 		readData(filename, xPosVector, yPosVector, zPosVector, xVelVector, yVelVector, zVelVector, massVector);
 	}
 
+	//Przes³anie danych pocz¹tkowych oraz ich podzia³ przez indeksy.
 	broadcastInitialData(totalDataSize, xPosVector, yPosVector, zPosVector, xVelVector, yVelVector, zVelVector, massVector);
 	splitData(myId, numProcs, totalDataSize, partialDataStarts, partialDataEnds);
 	ownDataStart = partialDataStarts[myId];
 	ownDataEnd = partialDataEnds[myId];
 	ownDataSize = ownDataEnd - ownDataStart + 1;
 
-	//Acceleration vectors are local, their indexes are shifted compared to the global vecotrs, ownDataStart -> 0;
+	//Wektory przyspieszenia w³asnych dla danego procesu cia³. Nie przechowuj¹ cia³ przynale¿nych do innych procesów.
 	double* xAccelerationVector = new double[ownDataSize];  //m/s2
 	double* yAccelerationVector = new double[ownDataSize];	//m/s2
 	double* zAccelerationVector = new double[ownDataSize];	//m/s2
@@ -76,19 +76,23 @@ int main(int argc, char *argv[])
 	fprintf(resultFile, "id;x;y;z\n");
 
 	int writeCounter = 0;
+	//Pêtla symulacji
 	for (double t = 0; t < Tmax; t += dt, writeCounter++)
 	{
+		//Iteracja po cia³ach w³asnych danego procesu
 		for (int i = ownDataStart; i < ownDataEnd + 1; i++)
 		{
 			xAccelerationVector[i - ownDataStart] = 0;
 			yAccelerationVector[i - ownDataStart] = 0;
 			zAccelerationVector[i - ownDataStart] = 0;
 
+			//Iteracja po wszystkich cia³ach symulacji
 			for (int j = 0; j < totalDataSize; j++)
 			{
 				if (i == j)
 					continue;
 
+				//Obliczenie przyspieszenia jakie cia³o j wywiera na cia³o w³asne i
 				xPosDiff = xPosVector[i] - xPosVector[j];
 				yPosDiff = yPosVector[i] - yPosVector[j];
 				zPosDiff = zPosVector[i] - zPosVector[j];
@@ -99,30 +103,12 @@ int main(int argc, char *argv[])
 				xAccelerationVector[i - ownDataStart] += -magnitude*cos(angleH)*cos(angleV) / massVector[i];
 				yAccelerationVector[i - ownDataStart] += -magnitude*sin(angleH) / massVector[i];
 				zAccelerationVector[i - ownDataStart] += -magnitude*cos(angleH)*sin(angleV) / massVector[i];
-
-#ifdef DEBUG
-				if (myId == 0 && t < 1.0 && i == 1 && j == 0)
-				{
-					std::cout << "Calculating for: own = " << i << ", other = " << j <<"\n";
-					std::cout << i << ": mass = " << massVector[i] << "\n";
-					std::cout << j << ": mass = " << massVector[j] << "\n";
-					std::cout << "r = " << sqrt(r2) << "\nr2 = " << r2 << "\nForce magnitude = " << magnitude << std::endl;
-				}
-#endif
 			}
 		}
 
+		//Zastosowanie obliczonych zmian prêdkoœci i po³o¿enia
 		for (int i = ownDataStart; i < ownDataEnd + 1; i++)
 		{
-#ifdef DEBUG
-			if (myId == 0 && t < 1.0 && i == ownDataStart + 1)
-			{
-				std::cout << "xAcceleration = " << xAccelerationVector[i - ownDataStart];
-				std::cout << "\nyAcceleration = " << yAccelerationVector[i - ownDataStart];
-				std::cout << "\nzAcceleration = " << zAccelerationVector[i - ownDataStart] << std::endl;
-			}
-#endif
-
 			xVelVector[i] += xAccelerationVector[i - ownDataStart] * dt;
 			yVelVector[i] += yAccelerationVector[i - ownDataStart] * dt;
 			zVelVector[i] += zAccelerationVector[i - ownDataStart] * dt;
@@ -133,6 +119,7 @@ int main(int argc, char *argv[])
 
 		broadcastData(myId, numProcs, xPosVector, yPosVector, zPosVector, partialDataStarts, partialDataEnds);
 		
+		//Co 10 minut zapisanie danych do pliku
 		if (myId == 0 && writeCounter % 10 == 0) {
 			saveData(resultFile, xPosVector, yPosVector, zPosVector, totalDataSize);
 		}
@@ -162,7 +149,7 @@ int main(int argc, char *argv[])
 
 int getDataSize(std::string filename)
 {
-	//Count number of bodies in datafile
+	//Zliczenie iloœci wpisów w pliku danych
 	int count = 0;
 	std::string line;
 	std::ifstream datafile("nbodydata.txt");
@@ -172,16 +159,12 @@ int getDataSize(std::string filename)
 		}
 		datafile.close();
 	}
-
-#ifdef DEBUG
-	std::cout << "0: Data read: " << count - 1 << std::endl;
-#endif
-
 	return (count - 1);
 }
 
 void splitData(int myId, int numProcs, int totalDataSize, int* partialDataStarts, int* partialDataEnds)
 {
+	//Podzia³ danych miêdzy procesy poprzez nadanie im pewnych zakresów indeksów.
 	int baseCount = totalDataSize / numProcs;
 	int leftover = totalDataSize%numProcs;
 
@@ -197,19 +180,11 @@ void splitData(int myId, int numProcs, int totalDataSize, int* partialDataStarts
 		partialDataEnds[i - 1] = partialDataStarts[i] - 1;
 	}
 	partialDataEnds[numProcs - 1] = totalDataSize - 1;
-
-#ifdef DEBUG
-	std::cout << myId << ": Calculated parts:" << std::endl;
-	for (int i = 0; i < numProcs; i++)
-	{
-		std::cout << myId << ": [" << partialDataStarts[i] << ", " << partialDataEnds[i] << "]" << std::endl;
-	}
-#endif
 }
 
 void readData(std::string filename, double* xPosVector, double* yPosVector, double* zPosVector, double* xVelVector, double* yVelVector, double* zVelVector, double* massVector)
 {
-	//Load from datafile
+	//Wczytanie danych cia³ niebieskich z pliku
 	std::string line;
 	std::string delimiter = ";";
 	int count = -1;
