@@ -89,13 +89,6 @@ int main(int argc, char *argv[])
 				if (i == j)
 					continue;
 
-#ifdef DEBUG
-				if (myId == 1 && t < 1.0)
-				{
-					std::cout << myId << ": calculating for: own = " << i << ", other = " << j << std::endl;
-				}
-#endif
-
 				xPosDiff = xPosVector[i] - xPosVector[j];
 				yPosDiff = yPosVector[i] - yPosVector[j];
 				zPosDiff = zPosVector[i] - zPosVector[j];
@@ -106,6 +99,14 @@ int main(int argc, char *argv[])
 				xAccelerationVector[0] += -magnitude*cos(angleH)*cos(angleV);
 				yAccelerationVector[0] += -magnitude*sin(angleH);
 				zAccelerationVector[0] += -magnitude*cos(angleH)*sin(angleV);
+
+#ifdef DEBUG
+				if (myId == 0 && t < 1.0)
+				{
+					std::cout << myId << ": calculating for: own = " << i << ", other = " << j << std::endl;
+					std::cout << "Force magnitude = " << magnitude << std::endl;
+				}
+#endif
 			}
 		}
 
