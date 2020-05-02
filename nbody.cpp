@@ -93,18 +93,20 @@ int main(int argc, char *argv[])
 				yPosDiff = yPosVector[i] - yPosVector[j];
 				zPosDiff = zPosVector[i] - zPosVector[j];
 				r2 = pow(xPosDiff, 2) + pow(yPosDiff, 2) + pow(zPosDiff, 2);
-				magnitude = G*massVector[j] / r2;
+				magnitude = G*massVector[i]*massVector[j] / r2;
 				angleH = atan2(yPosDiff, sqrt(pow(zPosDiff, 2) + pow(xPosDiff, 2)));
 				angleV = atan2(zPosDiff, xPosDiff);
-				xAccelerationVector[i] += -magnitude*cos(angleH)*cos(angleV);
-				yAccelerationVector[i] += -magnitude*sin(angleH);
-				zAccelerationVector[i] += -magnitude*cos(angleH)*sin(angleV);
+				xAccelerationVector[i - ownDataStart] += -magnitude*cos(angleH)*cos(angleV) / massVector[i];
+				yAccelerationVector[i - ownDataStart] += -magnitude*sin(angleH) / massVector[i];
+				zAccelerationVector[i - ownDataStart] += -magnitude*cos(angleH)*sin(angleV) / massVector[i];
 
 #ifdef DEBUG
 				if (myId == 0 && t < 1.0 && i == 0 && j == 1)
 				{
-					std::cout << myId << ": calculating for: own = " << i << ", other = " << j << std::endl;
-					std::cout << "r2 = " << r2 << "\nForce magnitude = " << magnitude << std::endl;
+					std::cout << "Calculating for: own = " << i << ", other = " << j << std::endl;
+					std::cout << i << ": mass = " << massVector[i] << "\n";
+					std::cout << j << ": mass = " << massVector[j];
+					std::cout << "r = " << sqrt(r2) "\nr2 = " << r2 << "\nForce magnitude = " << magnitude << std::endl;
 				}
 #endif
 			}
@@ -112,12 +114,14 @@ int main(int argc, char *argv[])
 
 		for (int i = ownDataStart; i < ownDataEnd + 1; i++)
 		{
+#ifdef DEBUG
 			if (myId == 0 && t < 1.0 && i == ownDataStart)
 			{
 				std::cout << "xAcceleration = " << xAccelerationVector[i - ownDataStart];
 				std::cout << "\nyAcceleration = " << yAccelerationVector[i - ownDataStart];
 				std::cout << "\nzAcceleration = " << zAccelerationVector[i - ownDataStart] << std::endl;
 			}
+#endif
 
 			xVelVector[i] += xAccelerationVector[i - ownDataStart] * dt;
 			yVelVector[i] += yAccelerationVector[i - ownDataStart] * dt;
