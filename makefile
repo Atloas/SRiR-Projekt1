@@ -1,6 +1,6 @@
 CC=mpic++
 R=mpiexec
-NN=9
+NN=4
 
 nbody: nbody.cpp
 	$(CC) -o nbody nbody.cpp
