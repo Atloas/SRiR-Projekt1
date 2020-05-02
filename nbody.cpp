@@ -103,9 +103,9 @@ int main(int argc, char *argv[])
 #ifdef DEBUG
 				if (myId == 0 && t < 1.0 && i == 0 && j == 1)
 				{
-					std::cout << "Calculating for: own = " << i << ", other = " << j << std::endl;
+					std::cout << "Calculating for: own = " << i << ", other = " << j <<"\n";
 					std::cout << i << ": mass = " << massVector[i] << "\n";
-					std::cout << j << ": mass = " << massVector[j];
+					std::cout << j << ": mass = " << massVector[j] << "\n";
 					std::cout << "r = " << sqrt(r2) << "\nr2 = " << r2 << "\nForce magnitude = " << magnitude << std::endl;
 				}
 #endif
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 		for (int i = ownDataStart; i < ownDataEnd + 1; i++)
 		{
 #ifdef DEBUG
-			if (myId == 0 && t < 1.0 && i == ownDataStart)
+			if (myId == 0 && t < 1.0 && i == ownDataStart + 1)
 			{
 				std::cout << "xAcceleration = " << xAccelerationVector[i - ownDataStart];
 				std::cout << "\nyAcceleration = " << yAccelerationVector[i - ownDataStart];
