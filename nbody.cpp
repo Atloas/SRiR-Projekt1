@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 					continue;
 
 #ifdef DEBUG
-				if (miId == 1 && t < 1.0)
+				if (myId == 1 && t < 1.0)
 				{
 					std::cout << myId << ": calculating for: own = " << i << ", other = " << j << std::endl;
 				}
