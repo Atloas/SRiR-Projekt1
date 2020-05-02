@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 				zAccelerationVector[i - ownDataStart] += -magnitude*cos(angleH)*sin(angleV) / massVector[i];
 
 #ifdef DEBUG
-				if (myId == 0 && t < 1.0 && i == 0 && j == 1)
+				if (myId == 0 && t < 1.0 && i == 1 && j == 0)
 				{
 					std::cout << "Calculating for: own = " << i << ", other = " << j <<"\n";
 					std::cout << i << ": mass = " << massVector[i] << "\n";
