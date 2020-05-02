@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 					std::cout << "Calculating for: own = " << i << ", other = " << j << std::endl;
 					std::cout << i << ": mass = " << massVector[i] << "\n";
 					std::cout << j << ": mass = " << massVector[j];
-					std::cout << "r = " << sqrt(r2) "\nr2 = " << r2 << "\nForce magnitude = " << magnitude << std::endl;
+					std::cout << "r = " << sqrt(r2) << "\nr2 = " << r2 << "\nForce magnitude = " << magnitude << std::endl;
 				}
 #endif
 			}
